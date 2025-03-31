@@ -145,48 +145,79 @@ exports.editMovieForm = async (req, res, next) => {
     next(error);
   }
 };
-
 // Procesar la edición de la película
 exports.editMovie = async (req, res, next) => {
-  if (!req.isAuthenticated()) {
-    req.flash('error', 'Debes iniciar sesión para editar películas');
-    return res.redirect('/auth/login');
-  }
-
-  try {
-    let { title, description, duration, releaseDate, genre, director, cast, imageUrl, trailerUrl } = req.body;
-
-    // Limitar los valores para evitar truncamiento
-    title = title.substring(0, 50);  // Si en la BD es VARCHAR(255)
-    description = description.substring(0, 1000); // Ajustar según la BD
-    genre = genre.substring(0, 100);
-    director = director.substring(0, 50);
-    cast = cast.substring(0, 500);
-    imageUrl = imageUrl.substring(0, 255);
-    trailerUrl = trailerUrl.substring(0, 255);
-
-    const pool = await poolPromise;
-    await pool.request()
-      .input('id', sql.Int, req.params.id)
-      .input('title', sql.NVarChar(50), title)
-      .input('description', sql.NVarChar(1000), description)
-      .input('duration', sql.Int, duration)
-      .input('releaseDate', sql.Date, releaseDate)
-      .input('genre', sql.NVarChar(100), genre)
-      .input('director', sql.NVarChar(50), director)
-      .input('cast', sql.NVarChar(500), cast)
-      .input('imageUrl', sql.NVarChar(255), imageUrl)
-      .input('trailerUrl', sql.NVarChar(255), trailerUrl)
-      .query(`UPDATE Movies 
-              SET Title = @title, Description = @description, Duration = @duration, ReleaseDate = @releaseDate, 
-                  Genre = @genre, Director = @director, Cast = @cast, ImageUrl = @imageUrl, TrailerUrl = @trailerUrl
-              WHERE Id = @id`);
-
-    req.flash('success', 'Película actualizada correctamente');
-    res.redirect(`/movies/${req.params.id}`);
-  } catch (error) {
-    await sendErrorEmail(error);
-    req.flash('error', 'Error al actualizar la película');
-    next(error);
-  }
-};
+    if (!req.isAuthenticated()) {
+      req.flash('error', 'Debes iniciar sesión para editar películas');
+      return res.redirect('/auth/login');
+    }
+  
+    try {
+      let { title, description, duration, releaseDate, genre, director, cast, imageUrl, trailerUrl } = req.body;
+  
+      // Limitar los valores para evitar truncamiento
+      title = title ? title.substring(0, 50) : null;
+      description = description ? description.substring(0, 1000) : null;
+      genre = genre ? genre.substring(0, 100) : null;
+      director = director ? director.substring(0, 50) : null;
+      cast = cast ? cast.substring(0, 500) : null;
+      imageUrl = imageUrl ? imageUrl.substring(0, 255) : null;
+      trailerUrl = trailerUrl ? trailerUrl.substring(0, 255) : null;
+  
+      // Verificar si los campos están vacíos y mantener los valores previos si es necesario
+      const pool = await poolPromise;
+      const result = await pool.request()
+        .input('id', sql.Int, req.params.id)
+        .query('SELECT * FROM Movies WHERE Id = @id');
+      
+      if (result.recordset.length === 0) {
+        return res.status(404).render('errors/404');
+      }
+  
+      // Obtener los valores previos de la película
+      const movie = result.recordset[0];
+  
+      // Actualizar solo los campos no vacíos, manteniendo los valores previos
+      title = title || movie.Title;
+      description = description || movie.Description;
+      genre = genre || movie.Genre;
+      director = director || movie.Director;
+      cast = cast || movie.Cast;
+      imageUrl = imageUrl || movie.ImageUrl;
+      trailerUrl = trailerUrl || movie.TrailerUrl;
+  
+      // Realizar la actualización en la base de datos
+      await pool.request()
+        .input('id', sql.Int, req.params.id)
+        .input('title', sql.NVarChar(50), title)
+        .input('description', sql.NVarChar(1000), description)
+        .input('duration', sql.Int, duration)
+        .input('releaseDate', sql.Date, releaseDate)
+        .input('genre', sql.NVarChar(100), genre)
+        .input('director', sql.NVarChar(50), director)
+        .input('cast', sql.NVarChar(500), cast)
+        .input('imageUrl', sql.NVarChar(255), imageUrl)
+        .input('trailerUrl', sql.NVarChar(255), trailerUrl)
+        .query(`
+          UPDATE Movies 
+          SET Title = @title, 
+              Description = @description, 
+              Duration = @duration, 
+              ReleaseDate = @releaseDate, 
+              Genre = @genre, 
+              Director = @director, 
+              Cast = @cast, 
+              ImageUrl = @imageUrl, 
+              TrailerUrl = @trailerUrl
+          WHERE Id = @id
+        `);
+  
+      req.flash('success', 'Película actualizada correctamente');
+      res.redirect(`/movies/${req.params.id}`);
+    } catch (error) {
+      await sendErrorEmail(error);
+      req.flash('error', 'Error al actualizar la película');
+      next(error);
+    }
+  };
+  
