@@ -75,22 +75,22 @@ exports.addMovie = async (req, res, next) => {
       let { title, description, duration, releaseDate, genre, director, cast, imageUrl, trailerUrl } = req.body;
   
       // Limitar los valores para evitar truncamiento
-      title = title.substring(0, 255);  // Si en la BD es VARCHAR(255)
+      title = title.substring(0, 50);  // Si en la BD es VARCHAR(255)
       description = description.substring(0, 1000); // Ajustar según la BD
       genre = genre.substring(0, 100);
-      director = director.substring(0, 100);
+      director = director.substring(0, 50);
       cast = cast.substring(0, 500);
       imageUrl = imageUrl.substring(0, 255);
       trailerUrl = trailerUrl.substring(0, 255);
   
       const pool = await poolPromise;
       await pool.request()
-        .input('title', sql.NVarChar(255), title)
+        .input('title', sql.NVarChar(50), title)
         .input('description', sql.NVarChar(1000), description)
         .input('duration', sql.Int, duration)
         .input('releaseDate', sql.Date, releaseDate)
         .input('genre', sql.NVarChar(100), genre)
-        .input('director', sql.NVarChar(100), director)
+        .input('director', sql.NVarChar(50), director)
         .input('cast', sql.NVarChar(500), cast)
         .input('imageUrl', sql.NVarChar(255), imageUrl)
         .input('trailerUrl', sql.NVarChar(255), trailerUrl)
