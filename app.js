@@ -44,7 +44,7 @@ app.use((req, res, next) => {
 app.use("/", require("./src/routes"));
 app.use("/movies", require("./src/routes/movieRoutes"));
 app.use("/auth", require("./src/routes/authRoutes"));
-app.use("/admin", require("./src/routes/adminRoutes"));
+
 
 
 // Manejo de errores
