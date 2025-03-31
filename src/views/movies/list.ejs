@@ -1,0 +1,25 @@
+<%- include('../partials/header', { title: 'Cartelera de Cine' }) %>
+
+<h1 class="mb-4">Cartelera de Cine</h1>
+
+<div class="row">
+    <% movies.forEach(movie => { %>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <img src="<%= movie.ImageUrl %>" class="card-img-top" alt="<%= movie.Title %>">
+                <div class="card-body">
+                    <h5 class="card-title"><%= movie.Title %></h5>
+                    <p class="card-text"><%= movie.Description.substring(0, 100) %>...</p>
+                    <a href="/movies/<%= movie.Id %>" class="btn btn-primary">Ver detalles</a>
+                    <% if (user) { %>
+                        <form action="/movies/<%= movie.Id %>/delete" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-danger">Eliminar</button>
+                        </form>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    <% }); %>
+</div>
+
+<%- include('../partials/footer') %>

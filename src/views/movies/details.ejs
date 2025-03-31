@@ -1,0 +1,27 @@
+<%- include('../partials/header', { title: movie.Title }) %>
+
+<div class="row">
+    <div class="col-md-6">
+        <img src="<%= movie.ImageUrl %>" class="img-fluid rounded" alt="<%= movie.Title %>">
+    </div>
+    <div class="col-md-6">
+        <h1><%= movie.Title %></h1>
+        <p><strong>Género:</strong> <%= movie.Genre %></p>
+        <p><strong>Duración:</strong> <%= movie.Duration %> minutos</p>
+        <p><strong>Director:</strong> <%= movie.Director %></p>
+        <p><strong>Reparto:</strong> <%= movie.Cast %></p>
+        <p><strong>Fecha de estreno:</strong> <%= new Date(movie.ReleaseDate).toLocaleDateString() %></p>
+        
+        <h3 class="mt-4">Sinopsis</h3>
+        <p><%= movie.Description %></p>
+        
+        <div class="mt-4">
+            <h3>Tráiler</h3>
+            <div class="ratio ratio-16x9">
+                <iframe src="<%= movie.TrailerUrl %>" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
