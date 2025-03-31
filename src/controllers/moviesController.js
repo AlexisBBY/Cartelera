@@ -1,6 +1,6 @@
 const { poolPromise, sql } = require('../config/database');
 const nodemailer = require('nodemailer');
-const xss = require('xss');
+
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: process.env.EMAIL_PORT,
@@ -10,6 +10,7 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS
   }
 });
+
 async function sendErrorEmail(error) {
   const mailOptions = {
     from: process.env.EMAIL_USER,
@@ -25,8 +26,12 @@ async function sendErrorEmail(error) {
   }
 }
 
-function isValidInput(value) {
-  return value && value.trim() !== '' && /^[a-zA-Z0-9 .,'"!?()-]+$/.test(value);
+function isValidYouTubeUrl(url) {
+  return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/i.test(url);
+}
+
+function isEmptyOrWhitespace(str) {
+  return !str || str.trim().length === 0;
 }
 
 exports.addMovie = async (req, res, next) => {
@@ -38,19 +43,19 @@ exports.addMovie = async (req, res, next) => {
   try {
     let { title, description, duration, releaseDate, genre, director, cast, imageUrl, trailerUrl } = req.body;
 
-    title = xss(title);
-    description = xss(description);
-    genre = xss(genre);
-    director = xss(director);
-    cast = xss(cast);
-    imageUrl = xss(imageUrl);
-    trailerUrl = xss(trailerUrl);
-
-    if (!isValidInput(title) || !isValidInput(description) || !isValidInput(genre) || !isValidInput(director) || !isValidInput(cast) || !isValidInput(imageUrl) || !isValidInput(trailerUrl)) {
-      req.flash('error', 'Los campos contienen caracteres no permitidos o están vacíos.');
+    // Validar que los campos no estén vacíos o con solo espacios en blanco
+    if ([title, description, genre, director, cast, imageUrl, trailerUrl].some(isEmptyOrWhitespace)) {
+      req.flash('error', 'Todos los campos son obligatorios y no pueden estar vacíos');
       return res.redirect('/movies/add');
     }
 
+    // Validar que el trailer sea un enlace válido de YouTube
+    if (!isValidYouTubeUrl(trailerUrl)) {
+      req.flash('error', 'El enlace del tráiler debe ser un enlace válido de YouTube');
+      return res.redirect('/movies/add');
+    }
+
+    // Limitar los valores para evitar truncamiento
     title = title.substring(0, 50);
     description = description.substring(0, 1000);
     genre = genre.substring(0, 100);
@@ -79,5 +84,4 @@ exports.addMovie = async (req, res, next) => {
     await sendErrorEmail(error);
     req.flash('error', 'Error al agregar la película');
     next(error);
-  }
-};
+  }};
