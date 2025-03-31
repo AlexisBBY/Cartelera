@@ -155,16 +155,30 @@ exports.editMovie = async (req, res, next) => {
     try {
       let { title, description, duration, releaseDate, genre, director, cast, imageUrl, trailerUrl } = req.body;
   
-      // Limitar los valores para evitar truncamiento
-      title = title ? title.substring(0, 50) : null;
-      description = description ? description.substring(0, 1000) : null;
-      genre = genre ? genre.substring(0, 100) : null;
-      director = director ? director.substring(0, 50) : null;
-      cast = cast ? cast.substring(0, 500) : null;
-      imageUrl = imageUrl ? imageUrl.substring(0, 255) : null;
-      trailerUrl = trailerUrl ? trailerUrl.substring(0, 255) : null;
+      // Eliminar los espacios en blanco al inicio y al final de cada campo
+      title = title.trim();
+      description = description.trim();
+      genre = genre.trim();
+      director = director.trim();
+      cast = cast.trim();
+      imageUrl = imageUrl.trim();
+      trailerUrl = trailerUrl.trim();
   
-      // Verificar si los campos están vacíos y mantener los valores previos si es necesario
+      // Validar que no se reciban campos vacíos
+      if (!title || !description || !genre || !director || !cast || !imageUrl || !trailerUrl) {
+        req.flash('error', 'Ningún campo puede estar vacío');
+        return res.redirect(`/movies/edit/${req.params.id}`);
+      }
+  
+      // Limitar los valores para evitar truncamiento
+      title = title.substring(0, 50);  // Si en la BD es VARCHAR(255)
+      description = description.substring(0, 1000); // Ajustar según la BD
+      genre = genre.substring(0, 100);
+      director = director.substring(0, 50);
+      cast = cast.substring(0, 500);
+      imageUrl = imageUrl.substring(0, 255);
+      trailerUrl = trailerUrl.substring(0, 255);
+  
       const pool = await poolPromise;
       const result = await pool.request()
         .input('id', sql.Int, req.params.id)
