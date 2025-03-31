@@ -35,6 +35,13 @@ exports.addMovie = async (req, res, next) => {
   try {
     let { title, description, duration, releaseDate, genre, director, cast, imageUrl, trailerUrl } = req.body;
 
+    // Validación: Asegurarse de que todos los campos necesarios estén presentes
+    if (!title || !description || !duration || !releaseDate || !genre || !director || !cast || !imageUrl || !trailerUrl) {
+      req.flash('error', 'Todos los campos son obligatorios');
+      return res.redirect('/movies/add');
+    }
+
+    // Limitar la longitud de los campos
     title = title.substring(0, 50);
     description = description.substring(0, 250);
     genre = genre.substring(0, 25);
@@ -43,6 +50,7 @@ exports.addMovie = async (req, res, next) => {
     imageUrl = imageUrl.substring(0, 255);
     trailerUrl = trailerUrl.substring(0, 255);
 
+    // Realizar la consulta a la base de datos
     const pool = await poolPromise;
     await pool.request()
       .input('title', sql.NVarChar(50), title)
@@ -62,8 +70,8 @@ exports.addMovie = async (req, res, next) => {
     req.flash('success', 'Película agregada correctamente');
     res.redirect('/movies');
   } catch (error) {
-    await sendErrorEmail(error);
+    await sendErrorEmail(error);  // Enviar correo en caso de error
     req.flash('error', 'Error al agregar la película');
-    next(error);
+    next(error);  // Pasa el error al manejador global de errores
   }
 };
