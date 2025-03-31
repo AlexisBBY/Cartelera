@@ -26,13 +26,42 @@ async function sendErrorEmail(error) {
   }
 }
 
-function isValidYouTubeUrl(url) {
-  return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/i.test(url);
-}
+exports.listMovies = async (req, res, next) => {
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request().query('SELECT * FROM Movies ORDER BY CreatedAt DESC');
+    res.render('movies/list', { movies: result.recordset });
+  } catch (error) {
+    await sendErrorEmail(error);
+    next(error);
+  }
+};
 
-function isEmptyOrWhitespace(str) {
-  return !str || str.trim().length === 0;
-}
+exports.movieDetails = async (req, res, next) => {
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .input('id', sql.Int, req.params.id)
+      .query('SELECT * FROM Movies WHERE Id = @id');
+    
+    if (result.recordset.length === 0) {
+      return res.status(404).render('errors/404');
+    }
+    
+    res.render('movies/details', { movie: result.recordset[0] });
+  } catch (error) {
+    await sendErrorEmail(error);
+    next(error);
+  }
+};
+
+exports.addMovieForm = (req, res) => {
+  if (!req.isAuthenticated()) {
+    req.flash('error', 'Debes iniciar sesión para agregar películas');
+    return res.redirect('/auth/login');
+  }
+  res.render('movies/add');
+};
 
 exports.addMovie = async (req, res, next) => {
   if (!req.isAuthenticated()) {
@@ -42,27 +71,23 @@ exports.addMovie = async (req, res, next) => {
 
   try {
     let { title, description, duration, releaseDate, genre, director, cast, imageUrl, trailerUrl } = req.body;
+    
+    function sanitizeInput(input, maxLength) {
+      return input ? input.trim().substring(0, maxLength) : '';
+    }
+    
+    title = sanitizeInput(title, 50);
+    description = sanitizeInput(description, 1000);
+    genre = sanitizeInput(genre, 100);
+    director = sanitizeInput(director, 50);
+    cast = sanitizeInput(cast, 500);
+    imageUrl = sanitizeInput(imageUrl, 255);
+    trailerUrl = sanitizeInput(trailerUrl, 255);
 
-    // Validar que los campos no estén vacíos o con solo espacios en blanco
-    if ([title, description, genre, director, cast, imageUrl, trailerUrl].some(isEmptyOrWhitespace)) {
-      req.flash('error', 'Todos los campos son obligatorios y no pueden estar vacíos');
+    if (!title || !description || !genre || !director || !cast || !imageUrl || !trailerUrl) {
+      req.flash('error', 'Todos los campos son obligatorios y no pueden contener solo espacios en blanco');
       return res.redirect('/movies/add');
     }
-
-    // Validar que el trailer sea un enlace válido de YouTube
-    if (!isValidYouTubeUrl(trailerUrl)) {
-      req.flash('error', 'El enlace del tráiler debe ser un enlace válido de YouTube');
-      return res.redirect('/movies/add');
-    }
-
-    // Limitar los valores para evitar truncamiento
-    title = title.substring(0, 50);
-    description = description.substring(0, 1000);
-    genre = genre.substring(0, 100);
-    director = director.substring(0, 50);
-    cast = cast.substring(0, 500);
-    imageUrl = imageUrl.substring(0, 255);
-    trailerUrl = trailerUrl.substring(0, 255);
 
     const pool = await poolPromise;
     await pool.request()
@@ -84,4 +109,26 @@ exports.addMovie = async (req, res, next) => {
     await sendErrorEmail(error);
     req.flash('error', 'Error al agregar la película');
     next(error);
-  }};
+  }
+};
+
+exports.deleteMovie = async (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    req.flash('error', 'Debes iniciar sesión para eliminar películas');
+    return res.redirect('/auth/login');
+  }
+
+  try {
+    const pool = await poolPromise;
+    await pool.request()
+      .input('id', sql.Int, req.params.id)
+      .query('DELETE FROM Movies WHERE Id = @id');
+    
+    req.flash('success', 'Película eliminada correctamente');
+    res.redirect('/movies');
+  } catch (error) {
+    await sendErrorEmail(error);
+    req.flash('error', 'Error al eliminar la película');
+    next(error);
+  }
+};
