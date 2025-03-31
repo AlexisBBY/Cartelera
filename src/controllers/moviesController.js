@@ -1,7 +1,6 @@
 const { poolPromise, sql } = require('../config/database');
 const nodemailer = require('nodemailer');
 
-// Configurar el transporter para nodemailer
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: process.env.EMAIL_PORT,
@@ -12,7 +11,6 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Función para enviar correos de error
 async function sendErrorEmail(error) {
   const mailOptions = {
     from: process.env.EMAIL_USER,
@@ -72,22 +70,30 @@ exports.addMovie = async (req, res, next) => {
   }
 
   try {
-    const { title, description, duration, releaseDate, genre, director, cast, imageUrl, trailerUrl } = req.body;
-    
+    let { title, description, duration, releaseDate, genre, director, cast, imageUrl, trailerUrl } = req.body;
+
+    title = title.substring(0, 50);
+    description = description.substring(0, 250);
+    genre = genre.substring(0, 25);
+    director = director.substring(0, 100);
+    cast = cast.substring(0, 100);
+    imageUrl = imageUrl.substring(0, 255);
+    trailerUrl = trailerUrl.substring(0, 255);
+
     const pool = await poolPromise;
     await pool.request()
-      .input('title', sql.NVarChar, title)
-      .input('description', sql.NVarChar, description)
+      .input('title', sql.NVarChar(50, title)
+      .input('description', sql.NVarChar(250), description)
       .input('duration', sql.Int, duration)
       .input('releaseDate', sql.Date, releaseDate)
-      .input('genre', sql.NVarChar, genre)
-      .input('director', sql.NVarChar, director)
-      .input('cast', sql.NVarChar, cast)
-      .input('imageUrl', sql.NVarChar, imageUrl)
-      .input('trailerUrl', sql.NVarChar, trailerUrl)
+      .input('genre', sql.NVarChar(25), genre)
+      .input('director', sql.NVarChar(100), director)
+      .input('cast', sql.NVarChar(100), cast)
+      .input('imageUrl', sql.NVarChar(255), imageUrl)
+      .input('trailerUrl', sql.NVarChar(255), trailerUrl)
       .query(`INSERT INTO Movies (Title, Description, Duration, ReleaseDate, Genre, Director, Cast, ImageUrl, TrailerUrl) 
               VALUES (@title, @description, @duration, @releaseDate, @genre, @director, @cast, @imageUrl, @trailerUrl)`);
-    
+
     req.flash('success', 'Película agregada correctamente');
     res.redirect('/movies');
   } catch (error) {
