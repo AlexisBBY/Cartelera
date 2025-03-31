@@ -1,0 +1,48 @@
+<%- include('../partials/header', { title: 'Editar ' + movie.Title }) %>
+
+<div class="row">
+    <div class="col-md-12">
+        <h1>Editar película: <%= movie.Title %></h1>
+        <form action="/movies/edit/<%= movie.Id %>" method="POST">
+            <div class="form-group">
+                <label for="title">Título</label>
+                <input type="text" class="form-control" id="title" name="title" value="<%= movie.Title %>" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Descripción</label>
+                <textarea class="form-control" id="description" name="description" rows="4" required><%= movie.Description %></textarea>
+            </div>
+            <div class="form-group">
+                <label for="duration">Duración</label>
+                <input type="number" class="form-control" id="duration" name="duration" value="<%= movie.Duration %>" required>
+            </div>
+            <div class="form-group">
+                <label for="releaseDate">Fecha de estreno</label>
+                <input type="date" class="form-control" id="releaseDate" name="releaseDate" value="<%= new Date(movie.ReleaseDate).toISOString().split('T')[0] %>" required>
+            </div>
+            <div class="form-group">
+                <label for="genre">Género</label>
+                <input type="text" class="form-control" id="genre" name="genre" value="<%= movie.Genre %>" required>
+            </div>
+            <div class="form-group">
+                <label for="director">Director</label>
+                <input type="text" class="form-control" id="director" name="director" value="<%= movie.Director %>" required>
+            </div>
+            <div class="form-group">
+                <label for="cast">Reparto</label>
+                <input type="text" class="form-control" id="cast" name="cast" value="<%= movie.Cast %>" required>
+            </div>
+            <div class="form-group">
+                <label for="imageUrl">URL de imagen</label>
+                <input type="text" class="form-control" id="imageUrl" name="imageUrl" value="<%= movie.ImageUrl %>" required>
+            </div>
+            <div class="form-group">
+                <label for="trailerUrl">URL del tráiler</label>
+                <input type="text" class="form-control" id="trailerUrl" name="trailerUrl" value="<%= movie.TrailerUrl %>" required>
+            </div>
+            <button type="submit" class="btn btn-success">Guardar cambios</button>
+        </form>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
